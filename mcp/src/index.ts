@@ -77,6 +77,10 @@ export default new Hono<{ Bindings: Env }>()
     const response = await fetch(`${c.env.PING_AIC_ISSUER}/.well-known/openid-configuration`);
     const pingAicConfig = await response.json() as any;
     const body = await c.req.text();
+
+    console.log('DCR Request body:', body);
+    console.log('Forwarding to:', pingAicConfig.registration_endpoint);
+
     const registrationResponse = await fetch(pingAicConfig.registration_endpoint, {
       method: 'POST',
       headers: {
@@ -84,7 +88,15 @@ export default new Hono<{ Bindings: Env }>()
       },
       body,
     });
+
     const data = await registrationResponse.json();
+    console.log('DCR Response status:', registrationResponse.status);
+    console.log('DCR Response data:', JSON.stringify(data, null, 2));
+
+    if (!registrationResponse.ok) {
+      console.error('DCR failed:', data);
+    }
+
     return c.json(data, registrationResponse.status);
   })
 
