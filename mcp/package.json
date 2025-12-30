@@ -7,6 +7,7 @@
 		"clean": "rm -rf dist .wrangler node_modules tsconfig.tsbuildinfo worker-configuration.d.ts || true",
 		"build": "wrangler types && tsc --build",
 		"dev": "wrangler dev",
+		"dev:debug": "wrangler dev --local --inspect",
 		"deploy": "npm run build && wrangler deploy"
 	},
 	"dependencies": {
