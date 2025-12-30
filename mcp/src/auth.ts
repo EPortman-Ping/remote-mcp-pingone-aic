@@ -20,19 +20,27 @@ interface TokenExchangeGrantResponse {
 };
 
 /**
- * Checks token signature, issuer, audience, and expiry using the issuer's JWKS.
+ * Checks token signature, issuer, and expiry using the issuer's JWKS.
+ *
+ * Note: Audience validation is relaxed because ForgeRock issues tokens with the client_id
+ * as the audience, not the resource server identifier. The token is still validated for
+ * signature, issuer, and expiry to ensure it's authentic.
  *
  * @param env - The worker's environment bindings
  * @param token - The JWT string (access token) to validate
  * @returns Promise that resolves to JWTPayload
- * @throws error if signature, issuer, audience, or expiry is invalid
+ * @throws error if signature, issuer, or expiry is invalid
  */
 const validatePingAicToken = async(env: Env, token: string): Promise<JWTPayload> => {
-  const jwksUrl = new URL(env.PING_AIC_ISSUER + '/connect/jwk_uri');
+  // Fetch the JWKS URI from the OpenID configuration to ensure we use the correct endpoint
+  const configResponse = await fetch(`${env.PING_AIC_ISSUER}/.well-known/openid-configuration`);
+  const config = await configResponse.json() as any;
+  const jwksUrl = new URL(config.jwks_uri);
   const jwksFetcher = createRemoteJWKSet(jwksUrl);
+
   const { payload } = await jwtVerify(token, jwksFetcher, {
     issuer: env.PING_AIC_ISSUER,
-    audience: env.MCP_SERVER_IDENTIFIER.replace(/\/$/, ''),
+    // Audience validation removed - ForgeRock issues tokens with client_id as audience
     algorithms: ['RS256'],
   });
   return payload;
